@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import ItemList from './ItemList'
-import { getProducts, getProductsByCategory } from '../utils/promises'
+import { getProducts, getProductsByCategory } from '../firebase/promises'
 
 function ItemListContainer({ greeting }) {
   const [products, setProducts] = useState([])
@@ -26,7 +26,13 @@ function ItemListContainer({ greeting }) {
       <h1 style={{ textAlign: 'center', padding: '20px' }}>{greeting}</h1>
       
       {loading ? (
-        <p style={{ textAlign: 'center' }}>Cargando productos...</p>
+        <p style={{ textAlign: 'center', padding: '40px', fontSize: '18px' }}>
+          Cargando productos...
+        </p>
+      ) : products.length === 0 ? (
+        <p style={{ textAlign: 'center', padding: '40px', fontSize: '18px', color: '#666' }}>
+          No se encontraron productos en esta categoría
+        </p>
       ) : (
         <ItemList products={products} />
       )}
