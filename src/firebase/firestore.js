@@ -8,8 +8,12 @@ import {
   addDoc 
 } from 'firebase/firestore'
 import { db } from './firebaseConfig'
+import { firebaseCredentials } from './firebaseCredentials'
 
 export const getProductsFromFirestore = async () => {
+  if (!db) {
+    throw new Error('Firebase no está inicializado')
+  }
   try {
     const productsCollection = collection(db, 'products')
     const querySnapshot = await getDocs(productsCollection)
@@ -25,6 +29,9 @@ export const getProductsFromFirestore = async () => {
 }
 
 export const getProductsByCategoryFromFirestore = async (categoryId) => {
+  if (!db) {
+    throw new Error('Firebase no está inicializado')
+  }
   try {
     const productsCollection = collection(db, 'products')
     const q = query(productsCollection, where('category', '==', categoryId))
@@ -41,6 +48,9 @@ export const getProductsByCategoryFromFirestore = async (categoryId) => {
 }
 
 export const getProductByIdFromFirestore = async (productId) => {
+  if (!db) {
+    throw new Error('Firebase no está inicializado')
+  }
   try {
     const productDoc = doc(db, 'products', productId)
     const productSnapshot = await getDoc(productDoc)
@@ -61,8 +71,14 @@ export const getProductByIdFromFirestore = async (productId) => {
 
 const isFirebaseConfigured = () => {
   try {
-    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || ''
-    return projectId !== '' && projectId !== 'TU_PROJECT_ID'
+    // Prioridad: Variables de entorno > Archivo de credenciales
+    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseCredentials.projectId || ''
+    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || firebaseCredentials.apiKey || ''
+    
+    return projectId !== '' && 
+           projectId !== 'TU_PROJECT_ID' && 
+           apiKey !== '' && 
+           apiKey !== 'TU_API_KEY'
   } catch {
     return false
   }

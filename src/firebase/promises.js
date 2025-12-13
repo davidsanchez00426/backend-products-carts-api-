@@ -4,12 +4,19 @@ import {
   getProductsByCategoryFromFirestore, 
   getProductByIdFromFirestore 
 } from './firestore';
+import { firebaseCredentials } from './firebaseCredentials';
 
 const useFirestore = () => {
   try {
     // Verificar si Firebase está configurado (no son los valores por defecto)
-    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || ''
-    return projectId !== '' && projectId !== 'TU_PROJECT_ID'
+    // Prioridad: Variables de entorno > Archivo de credenciales
+    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseCredentials.projectId || ''
+    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || firebaseCredentials.apiKey || ''
+    
+    return projectId !== '' && 
+           projectId !== 'TU_PROJECT_ID' && 
+           apiKey !== '' && 
+           apiKey !== 'TU_API_KEY'
   } catch {
     return false
   }
