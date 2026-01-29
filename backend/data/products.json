@@ -1,0 +1,101 @@
+[
+  {
+    "id": 1,
+    "title": "Balón Mini Brasil 2014",
+    "description": "Balón del Mundial Brasil 2014 en tamaño mini",
+    "code": "BRASIL-MINI-001",
+    "price": 29.99,
+    "status": true,
+    "stock": 15,
+    "category": "1",
+    "thumbnails": ["/brasil.jpg"]
+  },
+  {
+    "id": 2,
+    "title": "Balón Mini Champions",
+    "description": "Balón de la Champions League tamaño mini",
+    "code": "CHAMP-MINI-002",
+    "price": 34.99,
+    "status": true,
+    "stock": 20,
+    "category": "1",
+    "thumbnails": ["/champions.jpg"]
+  },
+  {
+    "id": 3,
+    "title": "Balón Mini Retro",
+    "description": "Balón clásico retro tamaño mini",
+    "code": "RETRO-MINI-003",
+    "price": 24.99,
+    "status": true,
+    "stock": 10,
+    "category": "1",
+    "thumbnails": ["/retro.jpg"]
+  },
+  {
+    "id": 4,
+    "title": "Balón Rusia 2018",
+    "description": "Balón del Mundial Rusia 2018 tamaño 2",
+    "code": "RUSIA-2018-004",
+    "price": 49.99,
+    "status": true,
+    "stock": 12,
+    "category": "2",
+    "thumbnails": ["/rusia.jpg"]
+  },
+  {
+    "id": 5,
+    "title": "Balón La Liga",
+    "description": "Balón de La Liga tamaño 2",
+    "code": "LALIGA-005",
+    "price": 44.99,
+    "status": true,
+    "stock": 18,
+    "category": "2",
+    "thumbnails": ["/la liga.jpg"]
+  },
+  {
+    "id": 6,
+    "title": "Balón Premier League",
+    "description": "Balón de la Premier League tamaño 2",
+    "code": "PREMIER-006",
+    "price": 47.99,
+    "status": true,
+    "stock": 14,
+    "category": "2",
+    "thumbnails": ["/premier.jpg"]
+  },
+  {
+    "id": 7,
+    "title": "Balón Qatar 2022",
+    "description": "Balón del Mundial Qatar 2022 profesional",
+    "code": "QATAR-2022-007",
+    "price": 89.99,
+    "status": true,
+    "stock": 25,
+    "category": "5",
+    "thumbnails": ["/qatar.jpg"]
+  },
+  {
+    "id": 8,
+    "title": "Balón Champions Pro",
+    "description": "Balón Champions League profesional",
+    "code": "CHAMP-PRO-008",
+    "price": 99.99,
+    "status": true,
+    "stock": 30,
+    "category": "5",
+    "thumbnails": ["/champions pro.jpg"]
+  },
+  {
+    "id": 9,
+    "title": "Balón Copa América",
+    "description": "Balón de la Copa América profesional",
+    "code": "COPA-AMERICA-009",
+    "price": 79.99,
+    "status": true,
+    "stock": 20,
+    "category": "5",
+    "thumbnails": ["/copa america.jpg"]
+  }
+]

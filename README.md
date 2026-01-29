@@ -1,41 +1,18 @@
-# Tienda de Balones - E-commerce
+# Entrega N° 1 - API Productos y Carritos
 
-Aplicación de e-commerce desarrollada con React para la venta de balones de fútbol.
+Servidor Node.js + Express para gestionar productos y carritos de compra. Persistencia en archivos JSON.
 
-## 🚀 Características
+## Requisitos
 
-- Catálogo de productos con categorías
-- Carrito de compras
-- Detalle de productos
-- Checkout y generación de órdenes
-- Integración con Firebase Firestore
+- Node.js
+- npm
 
-## 🛠️ Tecnologías Utilizadas
-
-- React 19
-- Vite
-- Firebase (Firestore)
-- React Router DOM
-
-## 📦 Instalación
+## Instalación y ejecución
 
 ```bash
+cd backend
 npm install
+npm start
 ```
 
-## 🏃 Ejecutar en Desarrollo
-
-```bash
-npm run dev
-```
-
-## 🏗️ Build para Producción
-
-```bash
-npm run build
-```
-
-## 📝 Notas
-
-- El proyecto utiliza Firebase Firestore para almacenar los productos
-- Las credenciales de Firebase se configuran en `src/firebase/firebaseCredentials.js`
+El servidor escucha en **http://localhost:8080**. Probar endpoints con Postman o similar.
