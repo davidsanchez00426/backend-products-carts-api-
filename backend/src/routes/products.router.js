@@ -28,6 +28,11 @@ router.get('/:pid', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const product = await productManager.addProduct(req.body);
+    const io = req.app.get('io');
+    if (io) {
+      const products = await productManager.getProducts();
+      io.emit('products', products);
+    }
     res.status(201).json(product);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -51,6 +56,11 @@ router.delete('/:pid', async (req, res) => {
     const deleted = await productManager.deleteProduct(req.params.pid);
     if (!deleted) {
       return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+    const io = req.app.get('io');
+    if (io) {
+      const products = await productManager.getProducts();
+      io.emit('products', products);
     }
     res.status(204).send();
   } catch (err) {

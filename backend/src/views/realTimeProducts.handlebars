@@ -1,0 +1,152 @@
+<h1>Productos en tiempo real</h1>
+<p>La lista se actualiza automáticamente al crear o eliminar productos (WebSocket).</p>
+
+<div class="card">
+  <h3>Agregar producto</h3>
+  <form id="formAddProduct">
+    <label>Título</label>
+    <input name="title" required placeholder="Ej: Laptop">
+    <label>Descripción</label>
+    <input name="description" required placeholder="Breve descripción">
+    <label>Código</label>
+    <input name="code" required placeholder="Ej: LAP001">
+    <label>Precio</label>
+    <input name="price" type="number" step="0.01" required placeholder="999.99">
+    <label>Stock</label>
+    <input name="stock" type="number" required placeholder="10">
+    <label>Categoría</label>
+    <input name="category" required placeholder="Ej: Computación">
+    <button type="submit">Crear producto</button>
+  </form>
+</div>
+
+<div id="productsContainer">
+  {{#if products.length}}
+    <table id="productsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Título</th>
+          <th>Descripción</th>
+          <th>Código</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Categoría</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="productsBody">
+        {{#each products}}
+          <tr data-id="{{this.id}}">
+            <td>{{this.id}}</td>
+            <td>{{this.title}}</td>
+            <td>{{this.description}}</td>
+            <td>{{this.code}}</td>
+            <td>${{this.price}}</td>
+            <td>{{this.stock}}</td>
+            <td>{{this.category}}</td>
+            <td><button type="button" class="btn-delete" data-id="{{this.id}}">Eliminar</button></td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="empty" id="emptyMsg">No hay productos cargados.</p>
+  {{/if}}
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  socket.on('products', (products) => {
+    const tbody = document.getElementById('productsBody');
+    const table = document.getElementById('productsTable');
+    const emptyMsg = document.getElementById('emptyMsg');
+
+    if (!products || products.length === 0) {
+      if (table) table.remove();
+      if (emptyMsg) {
+        emptyMsg.style.display = 'block';
+      } else {
+        const div = document.getElementById('productsContainer');
+        const p = document.createElement('p');
+        p.id = 'emptyMsg';
+        p.className = 'empty';
+        p.textContent = 'No hay productos cargados.';
+        div.appendChild(p);
+      }
+      return;
+    }
+
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    if (!table) {
+      const div = document.getElementById('productsContainer');
+      const tbl = document.createElement('table');
+      tbl.id = 'productsTable';
+      tbl.innerHTML = `
+        <thead><tr>
+          <th>ID</th><th>Título</th><th>Descripción</th><th>Código</th><th>Precio</th><th>Stock</th><th>Categoría</th><th></th>
+        </tr></thead>
+        <tbody id="productsBody"></tbody>
+      `;
+      div.appendChild(tbl);
+    }
+
+    const newBody = document.createElement('tbody');
+    newBody.id = 'productsBody';
+    products.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = p.id;
+      tr.innerHTML = `
+        <td>${p.id}</td>
+        <td>${p.title}</td>
+        <td>${p.description}</td>
+        <td>${p.code}</td>
+        <td>$${p.price}</td>
+        <td>${p.stock}</td>
+        <td>${p.category}</td>
+        <td><button type="button" class="btn-delete" data-id="${p.id}">Eliminar</button></td>
+      `;
+      newBody.appendChild(tr);
+    });
+
+    const oldTbody = document.getElementById('productsBody');
+    oldTbody.replaceWith(newBody);
+    bindDeleteButtons();
+  });
+
+  function bindDeleteButtons() {
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        fetch(`/api/products/${id}`, { method: 'DELETE' })
+          .then(res => { if (!res.ok) throw new Error('Error al eliminar'); })
+          .catch(err => alert(err.message));
+      };
+    });
+  }
+
+  bindDeleteButtons();
+
+  document.getElementById('formAddProduct').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+      title: form.title.value,
+      description: form.description.value,
+      code: form.code.value,
+      price: parseFloat(form.price.value),
+      stock: parseInt(form.stock.value, 10),
+      category: form.category.value
+    };
+    fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(res => res.json())
+      .then(() => { form.reset(); })
+      .catch(err => alert(err.message));
+  });
+</script>
