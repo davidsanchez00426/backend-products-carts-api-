@@ -1,51 +1,19 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { Product } from './models/Product.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const PRODUCTS_PATH = path.join(__dirname, '..', 'data', 'products.json');
-
+/**
+ * ProductManager: lógica de negocio de productos.
+ * Persistencia en MongoDB (modelo Product).
+ */
 export class ProductManager {
-  constructor() {
-    this.path = PRODUCTS_PATH;
-  }
-
-  async #readProducts() {
-    try {
-      const data = await fs.readFile(this.path, 'utf-8');
-      return JSON.parse(data);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        await fs.writeFile(this.path, '[]', 'utf-8');
-        return [];
-      }
-      throw err;
-    }
-  }
-
-  async #writeProducts(products) {
-    await fs.writeFile(this.path, JSON.stringify(products, null, 2), 'utf-8');
-  }
-
-  #generateId(products) {
-    if (products.length === 0) return 1;
-    const maxId = Math.max(...products.map((p) => (typeof p.id === 'number' ? p.id : Number(p.id) || 0)));
-    return maxId + 1;
-  }
-
   async getProducts() {
-    return this.#readProducts();
+    const products = await Product.find().lean();
+    return products.map((p) => ({ ...p, id: p._id.toString() }));
   }
 
   async getProductById(pid) {
-    const products = await this.#readProducts();
-    const product = products.find((p) => String(p.id) === String(pid));
-    if (!product) {
-      return null;
-    }
-    return product;
+    const product = await Product.findById(pid).lean();
+    if (!product) return null;
+    return { ...product, id: product._id.toString() };
   }
 
   async addProduct(productData) {
@@ -55,10 +23,7 @@ export class ProductManager {
       throw new Error('Faltan campos obligatorios: title, description, code, price, stock, category');
     }
 
-    const products = await this.#readProducts();
-    const id = this.#generateId(products);
-    const newProduct = {
-      id,
+    const newProduct = await Product.create({
       title: String(title),
       description: String(description),
       code: String(code),
@@ -67,38 +32,81 @@ export class ProductManager {
       stock: Number(stock),
       category: String(category),
       thumbnails: Array.isArray(thumbnails) ? thumbnails.map(String) : [],
-    };
+    });
 
-    products.push(newProduct);
-    await this.#writeProducts(products);
-    return newProduct;
+    return newProduct.toJSON();
   }
 
   async updateProduct(pid, updates) {
-    const products = await this.#readProducts();
-    const idx = products.findIndex((p) => String(p.id) === String(pid));
-    if (idx === -1) return null;
-
-    const { id, ...rest } = updates;
+    const { id, _id, ...rest } = updates;
     const allowed = ['title', 'description', 'code', 'price', 'status', 'stock', 'category', 'thumbnails'];
+    const toSet = {};
     for (const key of allowed) {
       if (rest[key] !== undefined) {
-        products[idx][key] = key === 'thumbnails' && Array.isArray(rest[key])
-          ? rest[key].map(String)
-          : rest[key];
+        toSet[key] = key === 'thumbnails' && Array.isArray(rest[key]) ? rest[key].map(String) : rest[key];
       }
     }
-
-    await this.#writeProducts(products);
-    return products[idx];
+    const product = await Product.findByIdAndUpdate(pid, { $set: toSet }, { new: true }).lean();
+    if (!product) return null;
+    return { ...product, id: product._id.toString() };
   }
 
   async deleteProduct(pid) {
-    const products = await this.#readProducts();
-    const filtered = products.filter((p) => String(p.id) !== String(pid));
-    if (filtered.length === products.length) return false;
+    const result = await Product.findByIdAndDelete(pid);
+    return !!result;
+  }
 
-    await this.#writeProducts(filtered);
-    return true;
+  /**
+   * Consulta paginada con filtros y ordenamiento.
+   * @param {Object} opts - limit (default 10), page (default 1), sort ('asc'|'desc'|null), category, status
+   * @param {string} baseUrl - base URL para prevLink/nextLink (ej: '/api/products')
+   */
+  async getProductsPaginated(opts = {}, baseUrl = '/api/products') {
+    const limit = Math.max(1, parseInt(opts.limit, 10) || 10);
+    const page = Math.max(1, parseInt(opts.page, 10) || 1);
+    const sort = opts.sort === 'asc' || opts.sort === 'desc' ? opts.sort : null;
+    const category = opts.category;
+    const status = opts.status;
+
+    const filter = {};
+    if (category != null && category !== '') filter.category = category;
+    if (status !== undefined && status !== '') filter.status = status === 'true' || status === true;
+
+    const totalDocs = await Product.countDocuments(filter);
+    const totalPages = Math.ceil(totalDocs / limit) || 1;
+    const hasPrevPage = page > 1;
+    const hasNextPage = page < totalPages;
+    const prevPage = hasPrevPage ? page - 1 : null;
+    const nextPage = hasNextPage ? page + 1 : null;
+
+    let query = Product.find(filter).skip((page - 1) * limit).limit(limit);
+    if (sort) query = query.sort({ price: sort === 'asc' ? 1 : -1 });
+    const docs = await query.lean();
+
+    const payload = docs.map((p) => ({ ...p, id: p._id.toString() }));
+
+    const buildLink = (p) => {
+      if (p == null) return null;
+      const params = new URLSearchParams();
+      params.set('limit', String(limit));
+      params.set('page', String(p));
+      if (category != null && category !== '') params.set('category', category);
+      if (status !== undefined && status !== '') params.set('status', String(status));
+      if (sort) params.set('sort', sort);
+      return `${baseUrl}?${params.toString()}`;
+    };
+
+    return {
+      status: 'success',
+      payload,
+      totalPages,
+      prevPage,
+      nextPage,
+      page,
+      hasPrevPage,
+      hasNextPage,
+      prevLink: buildLink(prevPage),
+      nextLink: buildLink(nextPage),
+    };
   }
 }

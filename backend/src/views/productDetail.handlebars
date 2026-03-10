@@ -1,0 +1,39 @@
+<h1>{{product.title}}</h1>
+<div class="card">
+  <p><strong>Descripción:</strong> {{product.description}}</p>
+  <p><strong>Precio:</strong> ${{product.price}}</p>
+  <p><strong>Categoría:</strong> {{product.category}}</p>
+  <p><strong>Stock:</strong> {{product.stock}}</p>
+  <p><strong>Código:</strong> {{product.code}}</p>
+  <p><strong>Disponible:</strong> {{#if product.status}}Sí{{else}}No{{/if}}</p>
+</div>
+<p>
+  <a href="/products">Volver a productos</a>
+</p>
+<div class="card">
+  <h3>Agregar al carrito</h3>
+  <label>ID del carrito</label>
+  <input type="text" id="cartId" placeholder="Ej: 65f1a2b3c4d5e6f7a8b9c0d1">
+  <button type="button" id="btnAddToCart">Agregar al carrito</button>
+</div>
+
+<script>
+  (function() {
+    var pid = '{{product._id}}';
+    document.getElementById('btnAddToCart').onclick = function() {
+      var cid = document.getElementById('cartId').value.trim();
+      if (!cid) { alert('Ingresa el ID del carrito. Crea uno con POST /api/carts'); return; }
+      fetch('/api/carts/' + cid + '/product/' + pid, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity: 1 })
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.error) alert(data.error);
+          else { alert('Agregado al carrito'); window.location.href = '/carts/' + cid; }
+        })
+        .catch(function() { alert('Error'); });
+    };
+  })();
+</script>

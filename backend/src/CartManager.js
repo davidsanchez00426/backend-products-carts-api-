@@ -1,72 +1,83 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { Cart } from './models/Cart.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const CARTS_PATH = path.join(__dirname, '..', 'data', 'carts.json');
-
+/**
+ * CartManager: lógica de negocio de carritos.
+ * Persistencia en MongoDB; products referencian al modelo Product.
+ */
 export class CartManager {
-  constructor() {
-    this.path = CARTS_PATH;
-  }
-
-  async #readCarts() {
-    try {
-      const data = await fs.readFile(this.path, 'utf-8');
-      return JSON.parse(data);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        await fs.writeFile(this.path, '[]', 'utf-8');
-        return [];
-      }
-      throw err;
-    }
-  }
-
-  async #writeCarts(carts) {
-    await fs.writeFile(this.path, JSON.stringify(carts, null, 2), 'utf-8');
-  }
-
-  #generateId(carts) {
-    if (carts.length === 0) return 1;
-    const maxId = Math.max(...carts.map((c) => (typeof c.id === 'number' ? c.id : Number(c.id) || 0)));
-    return maxId + 1;
-  }
-
   async createCart() {
-    const carts = await this.#readCarts();
-    const id = this.#generateId(carts);
-    const newCart = { id, products: [] };
-    carts.push(newCart);
-    await this.#writeCarts(carts);
-    return newCart;
+    const cart = await Cart.create({ products: [] });
+    return cart.toJSON();
   }
 
-  async getCartById(cid) {
-    const carts = await this.#readCarts();
-    const cart = carts.find((c) => String(c.id) === String(cid));
-    return cart ?? null;
+  async getCartById(cid, populateProducts = false) {
+    let query = Cart.findById(cid);
+    if (populateProducts) query = query.populate('products.product');
+    const cart = await query.lean();
+    if (!cart) return null;
+    const id = cart._id.toString();
+    return { ...cart, id };
   }
 
   async addProductToCart(cid, pid, quantity = 1) {
-    const carts = await this.#readCarts();
-    const cartIdx = carts.findIndex((c) => String(c.id) === String(cid));
-    if (cartIdx === -1) return null;
+    const cart = await Cart.findById(cid);
+    if (!cart) return null;
 
-    const cart = carts[cartIdx];
-    const productId = typeof pid === 'number' ? pid : (Number(pid) || String(pid));
     const qty = Math.max(1, Math.floor(Number(quantity) || 1));
-
-    const existing = cart.products.find((p) => String(p.product) === String(pid));
+    const existing = cart.products.find((p) => p.product.toString() === String(pid));
     if (existing) {
       existing.quantity += qty;
     } else {
-      cart.products.push({ product: productId, quantity: qty });
+      cart.products.push({ product: pid, quantity: qty });
     }
+    await cart.save();
+    return cart.toJSON();
+  }
 
-    await this.#writeCarts(carts);
-    return cart;
+  /** Eliminar un producto del carrito */
+  async removeProductFromCart(cid, pid) {
+    const cart = await Cart.findById(cid);
+    if (!cart) return null;
+    const initial = cart.products.length;
+    cart.products = cart.products.filter((p) => p.product.toString() !== String(pid));
+    if (cart.products.length === initial) return null;
+    await cart.save();
+    return cart.toJSON();
+  }
+
+  /** Actualizar todos los productos del carrito (array { product, quantity }) */
+  async updateCartProducts(cid, products) {
+    const cart = await Cart.findById(cid);
+    if (!cart) return null;
+    cart.products = Array.isArray(products)
+      ? products.map((p) => ({ product: p.product, quantity: Math.max(1, Number(p.quantity) || 1) }))
+      : [];
+    await cart.save();
+    return cart.toJSON();
+  }
+
+  /** Actualizar solo la cantidad de un producto en el carrito */
+  async updateProductQuantity(cid, pid, quantity) {
+    const cart = await Cart.findById(cid);
+    if (!cart) return null;
+    const item = cart.products.find((p) => p.product.toString() === String(pid));
+    if (!item) return null;
+    const qty = Math.max(0, Math.floor(Number(quantity) || 0));
+    if (qty === 0) {
+      cart.products = cart.products.filter((p) => p.product.toString() !== String(pid));
+    } else {
+      item.quantity = qty;
+    }
+    await cart.save();
+    return cart.toJSON();
+  }
+
+  /** Vaciar el carrito (eliminar todos los productos) */
+  async clearCart(cid) {
+    const cart = await Cart.findById(cid);
+    if (!cart) return null;
+    cart.products = [];
+    await cart.save();
+    return cart.toJSON();
   }
 }

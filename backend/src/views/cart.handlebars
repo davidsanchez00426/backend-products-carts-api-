@@ -1,0 +1,31 @@
+<h1>Carrito {{cartId}}</h1>
+<p>Solo se listan los productos de este carrito.</p>
+
+{{#if cart.products.length}}
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Precio</th>
+        <th>Cantidad</th>
+        <th>Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each cart.products}}
+        {{#if this.product}}
+          <tr>
+            <td>{{this.product.title}}</td>
+            <td>${{this.product.price}}</td>
+            <td>{{this.quantity}}</td>
+            <td>${{multiply this.product.price this.quantity}}</td>
+          </tr>
+        {{/if}}
+      {{/each}}
+    </tbody>
+  </table>
+  <p><a href="/products">Seguir comprando</a></p>
+{{else}}
+  <p class="empty">El carrito está vacío.</p>
+  <p><a href="/products">Ir a productos</a></p>
+{{/if}}

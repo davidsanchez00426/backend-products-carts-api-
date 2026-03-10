@@ -1,10 +1,12 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import exphbs from 'express-handlebars';
+import { engine } from 'express-handlebars';
 
+import { connectDB } from './config/database.js';
 import productsRouter from './routes/products.router.js';
 import cartsRouter from './routes/carts.router.js';
 import viewsRouter from './routes/views.router.js';
@@ -23,7 +25,15 @@ const io = new Server(server);
 app.set('io', io);
 
 // Handlebars
-app.engine('handlebars', exphbs.engine());
+app.engine(
+  'handlebars',
+  engine({
+    helpers: {
+      eq: (a, b) => a === b,
+      multiply: (a, b) => (Number(a) || 0) * (Number(b) || 0),
+    },
+  })
+);
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -51,4 +61,9 @@ function startServer(port) {
   });
 }
 
-startServer(PORT);
+connectDB()
+  .then(() => startServer(PORT))
+  .catch((err) => {
+    console.error('No se pudo iniciar:', err);
+    process.exit(1);
+  });
